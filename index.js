@@ -94,51 +94,37 @@ async function main(){
                 }
             }
 
-                for(let i3 = 0; i3 < poolsWithFees.length; i3++){
-                    routes.push({
-                        input: poolsWithFees[i3].token1,
-                        poolAddress: poolsWithFees[i3].address,
-                        fee: poolsWithFees[i3].fee,
-                        between: poolsWithFees[i3].token0
-                    })
-                }
 
-                //FINAL STEP
-
-                for(let i4 = 0; i4 < routes.length; i4++){
+                for(let i4 = 0; i4 < poolsWithFees.length; i4++){
                 const encodedRoute = ethers.utils.defaultAbiCoder.encode(
                     [
                         'address', 'uint256', 'address',
                         'address', 'uint256', 'address'
                     ],
                     [
-                        input, routes[i4].fee, routes[i4].between,
-                        routes[i4].between, routes[i4].fee, output
+                        input, poolsWithFees[i4].fee, poolsWithFees[i4].token0,
+                        poolsWithFees[i4].token0, poolsWithFees[i4].fee, output
                     ]
                 )
 
                 data.push({
                     input: input,
-                    poolAddress: routes[i4].poolAddress,
-                    fee: routes[i4].fee,
-                    between: routes[i4].between,
+                    poolAddress: poolsWithFees[i4].poolPerFee,
+                    fee: poolsWithFees[i4].fee,
+                    between: poolsWithFees[i4].token0,
+                    betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[i4].symbol,
                     encoded: encodedRoute
                 })
 
-                console.log(data)
-            
-
-                    //const amountOut = await quoterV2.callStatic.quoteExactInput(encodedRoute, '1000000000000000000')
-                    // amountOuts.push(amountOut.amountOut)
                 }
 
         }
 
         //ROUTES FOR INPUT - FEE - BETWEEN - BETWEEN - FEE - BETWEEN1 - OUTPUT
         for(let i5 = 0; i5 < PAIRS_TO_CHECK_TRADE_AGAINST.length; i5++){
-            for(let i6 = 0; i6 < data.length; i6++){
+            for(let i6 = 0; i6 < PAIRS_TO_CHECK_TRADE_AGAINST.length; i6++){
                 for(let i7 = 0; i7 < poolsWithFees.length; i7++){
-                    if(PAIRS_TO_CHECK_TRADE_AGAINST[i5].address !== data[i6].between){
+                    for(let i8 = 0; i8 < poolsWithFees.length; i8++){
                         const encodedRoute = ethers.utils.defaultAbiCoder.encode(
                             [
                                 'address', 'uint256', 'address',
@@ -146,26 +132,86 @@ async function main(){
                                 'address', 'uint256', 'address'
                             ],
                             [
-                                input, data[i6].fee, data[i6].between,
-                                data[i6].between, data[i6].fee, PAIRS_TO_CHECK_TRADE_AGAINST[i5].address,
-                                PAIRS_TO_CHECK_TRADE_AGAINST[i5].address, poolsWithFees[i7].fee, output
+                                input, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[i5].address,
+                                PAIRS_TO_CHECK_TRADE_AGAINST[i5].address, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[i6].address,
+                                PAIRS_TO_CHECK_TRADE_AGAINST[i6].address, poolsWithFees[i8].fee, output
                             ]
                         )    
             
                         data.push({
                             input: input,
                             poolAddress: poolsWithFees[i7].address,
-                            fee: data[i6].fee,
-                            between: data[i6].between,
-                            fee1: poolsWithFees[i7].fee,
-                            between1: PAIRS_TO_CHECK_TRADE_AGAINST[i5].address,
+                            fee: poolsWithFees[i7].fee,
+                            between: PAIRS_TO_CHECK_TRADE_AGAINST[i5].address,
+                            betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[i5].symbol,
+                            fee1: poolsWithFees[i8].fee,
+                            between1: PAIRS_TO_CHECK_TRADE_AGAINST[i6].address,
+                            betweenSymbol1: PAIRS_TO_CHECK_TRADE_AGAINST[i6].symbol,
                             encoded: encodedRoute
                         })
-                    } 
+                    }
                 }   
+        }
+        //INPUT FEE OUTPUT AMOUNG TwO FEE TIERS
+        for(let i9 = 0; i9 < poolsWithFees.length; i9++){
+            for(let i10 = 0; i10 < poolsWithFees.length; i10++){
+                    const encodedRoute = ethers.utils.defaultAbiCoder.encode(
+                        [
+                            'address', 'uint256', 'address',
+                            'address', 'uint256', 'address'
+                        ],
+                        [
+                            input, poolsWithFees[i9].fee, output,
+                            input, poolsWithFees[i10].fee, output,
+                        ]
+                    )
+                    
+                    data.push({
+                        input: input,
+                        poolAddress: poolsWithFees[i9].address,
+                        fee: FEE_TIERS[i9],
+                        between: 'fee',
+                        fee1: poolsWithFees[i10].fee,
+                        between1: null,
+                        poolAddress1: poolsWithFees[i10].address,
+                        encoded: encodedRoute
+                    })           
             }
         }
-        console.log(routes)
+
+        for(let i11 = 0; i11 < poolsWithFees.length; i11++){
+            for(let i12 = 0; i12 < poolsWithFees.length; i12++){
+                for(let i13 = 0; i13 < poolsWithFees.length; i13++){
+                    const encodedRoute = ethers.utils.defaultAbiCoder.encode(
+                        [
+                            'address', 'uint256', 'address',
+                            'address', 'uint256', 'address',
+                            'address', 'uint256', 'address'
+                        ],
+                        [
+                            input, poolsWithFees[i11].fee, output,
+                            input, poolsWithFees[i12].fee, output,
+                            input, poolsWithFees[i13].fee, output
+                        ]
+                    )
+                    
+                    data.push({
+                        input: input,
+                        poolAddress: poolsWithFees[i11].address,
+                        fee: FEE_TIERS[i11],
+                        between: 'fee',
+                        poolAddress1: poolsWithFees[i12].address,
+                        fee1: poolsWithFees[i12].fee,
+                        between1: null,
+                        poolAddress2: poolsWithFees[i13].address,
+                        fee2: poolsWithFees[i13].fee,
+                        encoded: encodedRoute
+                    })           
+            }
+        }
+    }
+}
+        console.log(data, 'data')
     } catch (error) {
         console.log(error)
     }
