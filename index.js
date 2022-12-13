@@ -9,10 +9,7 @@ const json = bodyParse.json
 const app = express();
 const router = express.Router()
 const provider = new ethers.providers.JsonRpcProvider(`https://eth-goerli.g.alchemy.com/v2/X_71lyvSJ09ASLV4smEvvVs2ZY-vSJ5h`)
-const ROUTER_ADDRESS = '0x3c3f75408924Ca5cF64522536FC8aFb7864dC190'
-const FACTORY_ADDRESS = '0x8eB105CFc7ec7ebF126586689683a9104E6ec91b' 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-const QUOTER_V2_ADDRESS = '0x11f1e7DF6CF2E441BD5AE2d01b1aA79B6E52cBCa'
 
 
 app.use(json());
@@ -26,7 +23,7 @@ const corsOptions = {
     'https://tangleswap.exchange',
     'https://frontend-ts-dapp.vercel.app',
     'https://tangleswap-api.herokuapp.com/',
-    'https://backend.tangleswap.exchange/'
+    'https://routes.tangleswap.exchange/'
   ],
 };
 
@@ -46,9 +43,6 @@ const factoryABI = [
         ) external view returns (address pool)`,
   ]
 
-const swapRouter = new ethers.Contract(ROUTER_ADDRESS, SWAP_ROUTER.abi, provider)
-const quoterV2 = new ethers.Contract(QUOTER_V2_ADDRESS, QUOTER_V2_ABI.abi, provider)
-const factory = new ethers.Contract(FACTORY_ADDRESS, factoryABI, provider)
 const PAIRS_TO_CHECK_TRADE_AGAINST = [
     {name: 'Shimmer', symbol: 'SMR', address:'0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6'}, //SHIMER
     {name:'IOTA', symbol: 'MIOTA', address:'0x3D0AaF7780346243e74B6De1BfFdE88D5a865aEF'}, //IOTA
@@ -65,28 +59,36 @@ const FEE_TIERS = [
     10000
 ]
 
-const ISwapRouter = new ethers.utils.Interface(SWAP_ROUTER.abi)
-async function main(){
-// router.get('/router/:input/:output/:routerAddress', cors(corsOptions), async (req, res) => {
-    const input = '0x288127Fe23304C8a2636529376A21e904327151C' //req.params.input
-    const output =  '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6' //req.params.output
-    //const routerAddress = req.params.routerAddress
+router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async (req, res) => {
+    const input = req.params.input
+    const output =  req.params.output
+    const factoryAddress = req.params.factory
+    const chainId = req.params.chainId
     let poolsWithFees = []
-    let routes = []
-    let amountOuts = []
     let data = []
+
+    const PAIRS_TO_CHECK_TRADE_AGAINST = [
+        {5: {name: 'Shimmer', symbol: 'SMR', address:'0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6'}, 1076: {}}, //SHIMER
+        {5: {name:'IOTA', symbol: 'MIOTA', address:'0x3D0AaF7780346243e74B6De1BfFdE88D5a865aEF'}, 1076:{}}, //IOTA
+        {5: {name: 'USDC', symbol:'USDC', address: '0x07865c6E87B9F70255377e024ace6630C1Eaa37F'}, 1076:{}}, //USDC
+        {5: {name: 'TETHER', symbol: 'USDT', address: '0xD87Ba7A50B2E7E660f678A895E4B72E7CB4CCd9C'}, 1076:{}}, //TETHER
+        {5: {name: 'Wrapped Bitcoin', symbol: 'WBTC', address:'0xF0CB01f304C657fdD2492bAd6C2c29CFCDc74AF7'}, 1076:{}}, //BTC
+        {5: {name: 'Wrapped Ether', symbol: 'WETH', address: '0xa640caE63fBd297dAE85f67E2637203158533a79'}, 1076:{}}, //ETH
+    ]
+
+    const factory = new ethers.Contract(factoryAddress, factoryABI, provider)
     try {
 
         //ROUTES FOR INPUT - FEE - BETWEEN - FEE -OUTPUT
         for(let i1 = 0; i1 < PAIRS_TO_CHECK_TRADE_AGAINST.length; i1++){
 
             for(let i2 = 0; i2 < FEE_TIERS.length; i2++){
-                const poolPerFee = await factory.getPool(input, PAIRS_TO_CHECK_TRADE_AGAINST[i1].address, FEE_TIERS[i2])
+                const poolPerFee = await factory.getPool(input, PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i1].address, FEE_TIERS[i2])
                 console.log(poolPerFee, 'poolPerFee')
                 console.log(i2, 'iterable')
                 if(poolPerFee !== ZERO_ADDRESS){
                     poolsWithFees.push({
-                        token0: PAIRS_TO_CHECK_TRADE_AGAINST[i1].address,
+                        token0: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i1].address,
                         token1: input,
                         address: poolPerFee,
                         fee: FEE_TIERS[i2]
@@ -112,7 +114,7 @@ async function main(){
                     poolAddress: poolsWithFees[i4].poolPerFee,
                     fee: poolsWithFees[i4].fee,
                     between: poolsWithFees[i4].token0,
-                    betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[i4].symbol,
+                    betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i4].symbol,
                     encoded: encodedRoute
                 })
 
@@ -132,9 +134,9 @@ async function main(){
                                 'address', 'uint256', 'address'
                             ],
                             [
-                                input, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[i5].address,
-                                PAIRS_TO_CHECK_TRADE_AGAINST[i5].address, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[i6].address,
-                                PAIRS_TO_CHECK_TRADE_AGAINST[i6].address, poolsWithFees[i8].fee, output
+                                input, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i5].address,
+                                PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i5].address, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i6].address,
+                                PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i6].address, poolsWithFees[i8].fee, output
                             ]
                         )    
             
@@ -142,11 +144,11 @@ async function main(){
                             input: input,
                             poolAddress: poolsWithFees[i7].address,
                             fee: poolsWithFees[i7].fee,
-                            between: PAIRS_TO_CHECK_TRADE_AGAINST[i5].address,
-                            betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[i5].symbol,
+                            between: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i5].address,
+                            betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i5].symbol,
                             fee1: poolsWithFees[i8].fee,
-                            between1: PAIRS_TO_CHECK_TRADE_AGAINST[i6].address,
-                            betweenSymbol1: PAIRS_TO_CHECK_TRADE_AGAINST[i6].symbol,
+                            between1: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i6].address,
+                            betweenSymbol1: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i6].symbol,
                             encoded: encodedRoute
                         })
                     }
@@ -211,13 +213,11 @@ async function main(){
         }
     }
 }
-        console.log(data, 'data')
+return res.json(data)
     } catch (error) {
         console.log(error)
     }
 
 
     // return res.json(posArr)
-// })
-}
-main()
+})
