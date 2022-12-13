@@ -83,12 +83,12 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
         for(let i1 = 0; i1 < PAIRS_TO_CHECK_TRADE_AGAINST.length; i1++){
 
             for(let i2 = 0; i2 < FEE_TIERS.length; i2++){
-                const poolPerFee = await factory.getPool(input, PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i1].address, FEE_TIERS[i2])
+                const poolPerFee = await factory.getPool(input, PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address, FEE_TIERS[i2])
                 console.log(poolPerFee, 'poolPerFee')
                 console.log(i2, 'iterable')
                 if(poolPerFee !== ZERO_ADDRESS){
                     poolsWithFees.push({
-                        token0: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i1].address,
+                        token0: PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address,
                         token1: input,
                         address: poolPerFee,
                         fee: FEE_TIERS[i2]
@@ -114,7 +114,7 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                     poolAddress: poolsWithFees[i4].poolPerFee,
                     fee: poolsWithFees[i4].fee,
                     between: poolsWithFees[i4].token0,
-                    betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i4].symbol,
+                    betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[i4][chainId].symbol,
                     encoded: encodedRoute
                 })
 
@@ -134,9 +134,9 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                                 'address', 'uint256', 'address'
                             ],
                             [
-                                input, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i5].address,
-                                PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i5].address, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i6].address,
-                                PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i6].address, poolsWithFees[i8].fee, output
+                                input, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address,
+                                PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[i6][chainId].address,
+                                PAIRS_TO_CHECK_TRADE_AGAINST[i6][chainId].address, poolsWithFees[i8].fee, output
                             ]
                         )    
             
@@ -144,11 +144,11 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                             input: input,
                             poolAddress: poolsWithFees[i7].address,
                             fee: poolsWithFees[i7].fee,
-                            between: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i5].address,
-                            betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i5].symbol,
+                            between: PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address,
+                            betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].symbol,
                             fee1: poolsWithFees[i8].fee,
-                            between1: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i6].address,
-                            betweenSymbol1: PAIRS_TO_CHECK_TRADE_AGAINST[chainId][i6].symbol,
+                            between1: PAIRS_TO_CHECK_TRADE_AGAINST[i6][chainId].address,
+                            betweenSymbol1: PAIRS_TO_CHECK_TRADE_AGAINST[i6][chainId].symbol,
                             encoded: encodedRoute
                         })
                     }
