@@ -179,64 +179,64 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                 }   
         }
         //INPUT FEE OUTPUT AMOUNG TwO FEE TIERS
-        for(let i9 = 0; i9 < poolsWithFees.length; i9++){
-            for(let i10 = 0; i10 < poolsWithFees.length; i10++){
-                    const encodedRoute = ethers.utils.defaultAbiCoder.encode(
-                        [
-                            'address', 'uint256', 'address',
-                            'address', 'uint256', 'address'
-                        ],
-                        [
-                            input, poolsWithFees[i9].fee, output,
-                            input, poolsWithFees[i10].fee, output,
-                        ]
-                    )
+        // for(let i9 = 0; i9 < poolsWithFees.length; i9++){
+        //     for(let i10 = 0; i10 < poolsWithFees.length; i10++){
+        //             const encodedRoute = ethers.utils.defaultAbiCoder.encode(
+        //                 [
+        //                     'address', 'uint256', 'address',
+        //                     'address', 'uint256', 'address'
+        //                 ],
+        //                 [
+        //                     input, poolsWithFees[i9].fee, output,
+        //                     input, poolsWithFees[i10].fee, output,
+        //                 ]
+        //             )
                     
-                    data.push({
-                        input: input,
-                        output: output,
-                        poolAddress: poolsWithFees[i9].address,
-                        fee: FEE_TIERS[i9],
-                        between: 'fee',
-                        fee1: poolsWithFees[i10].fee,
-                        between1: null,
-                        poolAddress1: poolsWithFees[i10].address,
-                        encoded: encodedRoute
-                    })           
-            }
-        }
+        //             data.push({
+        //                 input: input,
+        //                 output: output,
+        //                 poolAddress: poolsWithFees[i9].address,
+        //                 fee: FEE_TIERS[i9],
+        //                 between: 'fee',
+        //                 fee1: poolsWithFees[i10].fee,
+        //                 between1: null,
+        //                 poolAddress1: poolsWithFees[i10].address,
+        //                 encoded: encodedRoute
+        //             })           
+        //     }
+        // }
 
-        for(let i11 = 0; i11 < poolsWithFees.length; i11++){
-            for(let i12 = 0; i12 < poolsWithFees.length; i12++){
-                for(let i13 = 0; i13 < poolsWithFees.length; i13++){
-                    const encodedRoute = ethers.utils.defaultAbiCoder.encode(
-                        [
-                            'address', 'uint256', 'address',
-                            'address', 'uint256', 'address',
-                            'address', 'uint256', 'address'
-                        ],
-                        [
-                            input, poolsWithFees[i11].fee, output,
-                            input, poolsWithFees[i12].fee, output,
-                            input, poolsWithFees[i13].fee, output
-                        ]
-                    )
+    //     for(let i11 = 0; i11 < poolsWithFees.length; i11++){
+    //         for(let i12 = 0; i12 < poolsWithFees.length; i12++){
+    //             for(let i13 = 0; i13 < poolsWithFees.length; i13++){
+    //                 const encodedRoute = ethers.utils.defaultAbiCoder.encode(
+    //                     [
+    //                         'address', 'uint256', 'address',
+    //                         'address', 'uint256', 'address',
+    //                         'address', 'uint256', 'address'
+    //                     ],
+    //                     [
+    //                         input, poolsWithFees[i11].fee, output,
+    //                         input, poolsWithFees[i12].fee, output,
+    //                         input, poolsWithFees[i13].fee, output
+    //                     ]
+    //                 )
                     
-                    data.push({
-                        input: input,
-                        poolAddress: poolsWithFees[i11].address,
-                        fee: FEE_TIERS[i11],
-                        between: 'fee',
-                        poolAddress1: poolsWithFees[i12].address,
-                        fee1: poolsWithFees[i12].fee,
-                        between1: null,
-                        poolAddress2: poolsWithFees[i13].address,
-                        fee2: poolsWithFees[i13].fee,
-                        encoded: encodedRoute
-                    })           
-            }
-        }
-    }
+    //                 data.push({
+    //                     input: input,
+    //                     poolAddress: poolsWithFees[i11].address,
+    //                     fee: FEE_TIERS[i11],
+    //                     between: 'fee',
+    //                     poolAddress1: poolsWithFees[i12].address,
+    //                     fee1: poolsWithFees[i12].fee,
+    //                     between1: null,
+    //                     poolAddress2: poolsWithFees[i13].address,
+    //                     fee2: poolsWithFees[i13].fee,
+    //                     encoded: encodedRoute
+    //                 })           
+    //         }
+    //     }
+    // }
 }
 return res.json(data)
     } catch (error) {
