@@ -65,6 +65,8 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
     const factoryAddress = req.params.factory
     const chainId = req.params.chainId
     let poolsWithFees = []
+    let validInputPair = [{}]
+    let validOutputPair = [{}]
     let data = []
 
     const PAIRS_TO_CHECK_TRADE_AGAINST = [
@@ -77,47 +79,61 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
     ]
 
     const factory = new ethers.Contract(factoryAddress, factoryABI, provider)
-    try {  
+    try {
 
         //ROUTES FOR INPUT - FEE - BETWEEN - FEE -OUTPUT
         for(let i1 = 0; i1 < PAIRS_TO_CHECK_TRADE_AGAINST.length; i1++){
             for(let i2 = 0; i2 < FEE_TIERS.length; i2++){
-                const poolPerFee = await factory.getPool(input, PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address, FEE_TIERS[i2])
-                console.log(poolPerFee, 'poolPerFee')
-                console.log(i2, 'iterable')
-                if(poolPerFee !== ZERO_ADDRESS){
+                const poolPerFee0 = await factory.getPool(input, PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address, FEE_TIERS[i2])
+                const poolPerFee1 = await factory.getPool(input, PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address, FEE_TIERS[i2])
+                if(poolPerFee0 !== ZERO_ADDRESS){
                     poolsWithFees.push({
                         token0: PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address,
                         token1: input,
-                        address: poolPerFee,
+                        address: poolPerFee0,
                         fee: FEE_TIERS[i2]
                     })
+                    // //validInputPair[0][input][PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address] = true
+                    // validInputPair.push({PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address:})
                 }
-            }  
+
+                if(poolPerFee1 !== ZERO_ADDRESS){
+                    poolsWithFees.push({
+                        token0: PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address,
+                        token1: output,
+                        address: poolPerFee1,
+                        fee: FEE_TIERS[i2],
+                    })
+                    // validOutputPair[0][output][PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address] = true
+                }                
+            }
+
                 for(let i4 = 0; i4 < poolsWithFees.length; i4++){
                     for(let i40 = 0; i40 < poolsWithFees.length; i40++){
-                        const pool0 = await factory.getPool(input, PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address, poolsWithFees[i4].fee)
-                        const pool1 = await factory.getPool(output, PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address, poolsWithFees[i40].fee)
-                    if(pool0 !== ZERO_ADDRESS && pool1 !== ZERO_ADDRESS){
-                        const encodedRoute = ethers.utils.defaultAbiCoder.encode(
-                            [
-                                'address', 'uint256', 'address',
-                                'address', 'uint256', 'address'
-                            ],
-                            [
-                                input, poolsWithFees[i4].fee, poolsWithFees[i4].token0,
-                                poolsWithFees[i4].token0, poolsWithFees[i40].fee, output
-                            ]
-                        )
-        
-                        data.push({
-                            input: input,
-                            poolAddress: poolsWithFees[i4].poolPerFee,
-                            fee: poolsWithFees[i4].fee,
-                            between: poolsWithFees[i4].token0,
-                            betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[i4][chainId].symbol,
-                            encoded: encodedRoute
-                        })
+                        if(
+                            poolsWithFees[i4].token0 === PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address &&
+                            poolsWithFees[i40].token0 === PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address
+                        ){
+                            const encodedRoute = ethers.utils.defaultAbiCoder.encode(
+                                [
+                                    'address', 'uint256', 'address',
+                                    'uint256', 'address'
+                                ],
+                                [
+                                    input, poolsWithFees[i4].fee, poolsWithFees[i4].token0,
+                                    poolsWithFees[i40].fee, output
+                                ]
+                            )
+            
+                            data.push({
+                                input: input,
+                                output: output,
+                                poolAddress: poolsWithFees[i4].poolPerFee0,
+                                fee: poolsWithFees[i4].fee,
+                                between: poolsWithFees[i4].token0,
+                                betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].symbol,
+                                encoded: encodedRoute
+                            })
                         }
                     }    
                 }
@@ -129,11 +145,9 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
             for(let i6 = 0; i6 < PAIRS_TO_CHECK_TRADE_AGAINST.length; i6++){
                 for(let i7 = 0; i7 < poolsWithFees.length; i7++){
                     for(let i8 = 0; i8 < poolsWithFees.length; i8++){
-                        const pool0 = await factory.getPool(input, PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address, poolsWithFees[i7].fee)
-                        const pool1 = await factory.getPool(output, PAIRS_TO_CHECK_TRADE_AGAINST[i6][chainId].address, poolsWithFees[i8].fee)
                         if(
-                            pool0 !== ZERO_ADDRESS &&
-                            pool1 !== ZERO_ADDRESS
+                            poolsWithFees[i7].token0 === PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address &&
+                            poolsWithFees[i8].token0 === PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address
                         ){
                             const encodedRoute = ethers.utils.defaultAbiCoder.encode(
                                 [
@@ -150,6 +164,7 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                 
                             data.push({
                                 input: input,
+                                output: output,
                                 poolAddress: poolsWithFees[i7].address,
                                 fee: poolsWithFees[i7].fee,
                                 between: PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address,
@@ -179,6 +194,7 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                     
                     data.push({
                         input: input,
+                        output: output,
                         poolAddress: poolsWithFees[i9].address,
                         fee: FEE_TIERS[i9],
                         between: 'fee',
