@@ -78,6 +78,26 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
         {5: {name: 'Wrapped Ether', symbol: 'WETH', address: '0xa640caE63fBd297dAE85f67E2637203158533a79'}, 1076:{}}, //ETH
     ]
 
+    function encodePath(path, fees) {
+        const FEE_SIZE = 4
+      
+        if (path.length != fees.length + 1) {
+          throw new Error('path/fee lengths do not match')
+        }
+      
+        let encoded = '0x'
+        for (let i = 0; i < fees.length; i++) {
+          // 20 byte encoding of the address
+          encoded += String(path[i]).slice(2)
+          // 3 byte encoding of the fee
+          encoded += fees[i].toString(16).padStart(2 * FEE_SIZE, '0')
+        }
+        // encode the final token
+        encoded += path[path.length - 1].slice(2)
+      
+        return encoded.toLowerCase()
+      }
+
     const factory = new ethers.Contract(factoryAddress, factoryABI, provider)
     try {
 
@@ -93,8 +113,6 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                         address: poolPerFee0,
                         fee: FEE_TIERS[i2]
                     })
-                    // //validInputPair[0][input][PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address] = true
-                    // validInputPair.push({PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address:})
                 }
 
                 if(poolPerFee1 !== ZERO_ADDRESS){
@@ -104,7 +122,6 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                         address: poolPerFee1,
                         fee: FEE_TIERS[i2],
                     })
-                    // validOutputPair[0][output][PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address] = true
                 }                
             }
 
@@ -114,16 +131,15 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                             poolsWithFees[i4].token0 === PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address &&
                             poolsWithFees[i40].token0 === PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].address
                         ){
-                            const encodedRoute = ethers.utils.defaultAbiCoder.encode(
-                                [
-                                    'address', 'uint256', 'address',
-                                    'uint256', 'address'
-                                ],
-                                [
-                                    input, poolsWithFees[i4].fee, poolsWithFees[i4].token0,
-                                    poolsWithFees[i40].fee, output
-                                ]
-                            )
+
+                        let path = []
+                        let fee = []
+
+                            path[0] = input
+                            fee[0] = poolsWithFees[i4].fee
+                            path[1] = poolsWithFees[i4].token0
+                            fee[1] = poolsWithFees[i40].fee
+                            path[2] = output
             
                             data.push({
                                 input: input,
@@ -132,7 +148,7 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                                 fee: poolsWithFees[i4].fee,
                                 between: poolsWithFees[i4].token0,
                                 betweenSymbol: PAIRS_TO_CHECK_TRADE_AGAINST[i1][chainId].symbol,
-                                encoded: encodedRoute
+                                encoded: encodePath(path, fee)
                             })
                         }
                     }    
@@ -149,18 +165,18 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                             poolsWithFees[i7].token0 === PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address &&
                             poolsWithFees[i8].token0 === PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address
                         ){
-                            const encodedRoute = ethers.utils.defaultAbiCoder.encode(
-                                [
-                                    'address', 'uint256','address', 
-                                    'uint256', 'address', 'uint256', 
-                                    'address'
-                                ],
-                                [
-                                    input, poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address,
-                                    poolsWithFees[i7].fee, PAIRS_TO_CHECK_TRADE_AGAINST[i6][chainId].address,
-                                    poolsWithFees[i8].fee, output
-                                ]
-                            )    
+
+                        let path = []
+                        let fee = []
+                            
+                            path[0] = input
+                            fee[0] = poolsWithFees[i7].fee
+                            path[1] = PAIRS_TO_CHECK_TRADE_AGAINST[i5][chainId].address
+                            fee[1] = poolsWithFees[i7].fee
+                            path[2] = PAIRS_TO_CHECK_TRADE_AGAINST[i6][chainId]
+                            fee[2] = poolsWithFees[i8].fee
+                            path[3] = output
+
                 
                             data.push({
                                 input: input,
@@ -172,7 +188,7 @@ router.get('/router/:input/:output/:factory/:chainId', cors(corsOptions), async 
                                 fee1: poolsWithFees[i8].fee,
                                 between1: PAIRS_TO_CHECK_TRADE_AGAINST[i6][chainId].address,
                                 betweenSymbol1: PAIRS_TO_CHECK_TRADE_AGAINST[i6][chainId].symbol,
-                                encoded: encodedRoute
+                                encoded: encodePath(path, fee)
                             })
                         }
                     }
